@@ -1,7 +1,7 @@
 # dsh-focus-mode bundle patch
 # 前端面板由 package.json 的 dsh.client 声明，无需额外声明
 - insert:
-  - id: focus-mode
+  - - id: dsh-focus-mode
     name: 'dsh-focus-mode'
     config:
       # 总开关：关闭后不再注入定向引导、不执行拦截
