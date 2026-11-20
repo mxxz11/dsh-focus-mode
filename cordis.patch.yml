@@ -1,26 +1,14 @@
 # dsh-focus-mode bundle patch
-# 前端面板由 package.json 的 dsh.client 声明，无需额外声明
 - insert:
-  - - id: dsh-focus-mode
+    id: dsh-focus-mode
     name: 'dsh-focus-mode'
     config:
-      # 总开关：关闭后不再注入定向引导、不执行拦截
       enabled: true
-      # 拦截开关：关闭后仅注入引导文案，不做工具层拦截判定
       enforce: true
-      # 附属动作弹窗确认，面板可配置
-      # false：用户主动要求附属动作直接执行；未主动提出则拦截
-      # true：执行附属动作前弹出【执行/跳过】确认框
       confirmSubsidiary: false
-      # 新会话默认领域：general / image / ppt / video / code / doc / data
       defaultMode: general
-      # 锁定模式默认开启：持续定向约束、跨域拦截
       lockByDefault: true
-      # 偏离自动回退：连续 N 条偏离消息，切回通用；0=关闭
       offTopicRevertAfter: 3
-      # 空闲超时自动回退（分钟）；0=关闭
       idleRevertMinutes: 0
-      # 引导执行顺序：520 放在 plan policy(500) 之后、工具引导(1000+)之前
       sectionOrder: 520
-      # 面板轮询间隔（毫秒）
       pollMs: 15000
