@@ -12,7 +12,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 
-import { apply } from '../lib/index.js'
+import apply from '../lib/index.js'
 import { MODES, MODE_IDS, PRIMARY_MODE_IDS, renderGuidance } from '../lib/modes.js'
 import {
   HEAVY_PROMPT,
@@ -72,7 +72,7 @@ async function callRoute (routes, url, method = 'GET', body = null) {
   const req = Readable.from(payload.length === 0 ? [] : [payload])
   req.method = method
   req.url = url
-  req.headers = { 'content-type': 'application/json' }
+  req.headers = { 'content-type': 'application/json', 'x-dsh-focus': '1' }
   const chunks = []
   let finish = () => {}
   const done = new Promise(resolve => { finish = resolve })
@@ -85,7 +85,9 @@ async function callRoute (routes, url, method = 'GET', body = null) {
 
 const agentOf = id => ({ id, session: { id, header: { cwd: os.tmpdir() } } })
 const tmpRoot = path.join(os.tmpdir(), 'tf-v3-' + Date.now())
-const storageFile = path.join(tmpRoot, 'state.json')
+// 存储路径现在被限制在 <DSH_HOME>/storages/dsh-focus-mode/ 内，测试把 DSH_HOME 指向临时目录
+process.env.DSH_HOME = tmpRoot
+const storageFile = path.join(tmpRoot, 'storages', 'dsh-focus-mode', 'state.json')
 
 // ------------------------------------------------------------------- catalog
 
@@ -551,6 +553,67 @@ await check('the rigor tier round-trips through HTTP and storage', async () => {
 // --------------------------------------------------------------------- http
 
 console.log('\n[http]')
+
+/** Build a raw request/response pair so the guard can be exercised without the helper's headers. */
+const rawPost = async (url, body, headers) => {
+  const route = main.routes.find(item => url.startsWith(item.path))
+  const payload = Buffer.from(JSON.stringify(body), 'utf8')
+  const req = Readable.from([payload])
+  req.method = 'POST'
+  req.url = url
+  req.headers = { 'content-type': 'application/json', ...headers }
+  const chunks = []
+  let finish = () => {}
+  const done = new Promise(resolve => { finish = resolve })
+  const res = { statusCode: 0, setHeader () {}, end (chunk) { if (chunk) chunks.push(Buffer.from(chunk)); finish() } }
+  await route.handler(req, res)
+  await done
+  const text = Buffer.concat(chunks).toString('utf8')
+  return { status: res.statusCode, json: text ? JSON.parse(text) : null }
+}
+
+await check('POST without the guard header is rejected with 403', async () => {
+  const response = await rawPost('/dsh-focus-mode/mode', { session: 'g1', mode: 'code' }, {})
+  assert.equal(response.status, 403, 'a missing x-dsh-focus header must be refused')
+  assert.match(response.json.error, /missing x-dsh-focus/)
+  assert.equal(response.json.ok, false)
+})
+
+await check('POST from a cross-origin page is rejected with 403', async () => {
+  const response = await rawPost('/dsh-focus-mode/mode', { session: 'g1', mode: 'code' }, {
+    'x-dsh-focus': '1',
+    host: '127.0.0.1:19387',
+    origin: 'https://evil.example',
+  })
+  assert.equal(response.status, 403, 'a foreign Origin must be refused')
+  assert.match(response.json.error, /cross-origin Origin/)
+})
+
+await check('POST with a cross-origin Referer is rejected with 403', async () => {
+  const response = await rawPost('/dsh-focus-mode/lock', { session: 'g1', lock: true }, {
+    'x-dsh-focus': '1',
+    host: '127.0.0.1:19387',
+    referer: 'https://evil.example/page.html',
+  })
+  assert.equal(response.status, 403, 'a foreign Referer must be refused')
+  assert.match(response.json.error, /cross-origin Referer/)
+})
+
+await check('POST that passes the guard still succeeds (same-origin first party)', async () => {
+  const response = await rawPost('/dsh-focus-mode/mode', { session: 'g2', mode: 'data' }, {
+    'x-dsh-focus': '1',
+    host: '127.0.0.1:19387',
+    origin: 'http://127.0.0.1:19387',
+  })
+  assert.equal(response.status, 200, 'the first-party panel must keep working')
+  assert.equal(response.json.mode, 'data')
+})
+
+await check('GET stays readable without the guard header', async () => {
+  const read = await callRoute(main.routes, '/dsh-focus-mode/state?session=g2')
+  assert.equal(read.status, 200)
+  assert.equal(read.json.mode, 'data')
+})
 
 await check('every switch round-trips and persists', async () => {
   const base = { session: 'h1' }

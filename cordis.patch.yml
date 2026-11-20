@@ -1,26 +1,32 @@
 # dsh-focus-mode bundle patch
-# 前端面板由 package.json 的 dsh.client 声明，无需额外声明
+# 前端面板由 package.json 的 dsh.client 声明，这里只保留一行 Host 配置。
 - insert:
-  - id: focus-mode
-    name: 'dsh-focus-mode'
-    config:
-      # 总开关：关闭后不再注入定向引导、不执行拦截
-      enabled: true
-      # 拦截开关：关闭后仅注入引导文案，不做工具层拦截判定
-      enforce: true
-      # 附属动作弹窗确认，面板可配置
-      # false：用户主动要求附属动作直接执行；未主动提出则拦截
-      # true：执行附属动作前弹出【执行/跳过】确认框
-      confirmSubsidiary: false
-      # 新会话默认领域：general / image / ppt / video / code / doc / data
-      defaultMode: general
-      # 锁定模式默认开启：持续定向约束、跨域拦截
-      lockByDefault: true
-      # 偏离自动回退：连续 N 条偏离消息，切回通用；0=关闭
-      offTopicRevertAfter: 3
-      # 空闲超时自动回退（分钟）；0=关闭
-      idleRevertMinutes: 0
-      # 引导执行顺序：520 放在 plan policy(500) 之后、工具引导(1000+)之前
-      sectionOrder: 520
-      # 面板轮询间隔（毫秒）
-      pollMs: 15000
+    - id: dsh-focus-mode
+      name: 'dsh-focus-mode'
+      config:
+        # 总开关：关闭后不再注入引导、也不再拦截
+        enabled: true
+        # 拦截开关：关闭后只注入引导词，不做工具层拦截
+        enforce: true
+        # 附属动作弹窗确认：false=用户明确提出则直接执行；true=执行前先弹确认框
+        confirmSubsidiary: false
+        # 专注模式默认值（禁用沙箱，只能手工列式）
+        focusModeByDefault: false
+        # 执行方式标记默认值
+        showMarkersByDefault: true
+        # 严谨等级默认值：fast | balanced | strict
+        rigorByDefault: balanced
+        # 手工计算行数阈值，超过视为重型计算
+        handLimit: 200
+        # 新会话默认领域：general / image / ppt / video / code / doc / data
+        defaultMode: general
+        # 锁定模式默认值：持续定向约束与跨域拦截
+        lockByDefault: true
+        # 未锁定时连续 N 条偏离消息自动切回通用，0=关闭
+        offTopicRevertAfter: 3
+        # 未锁定时空闲 N 分钟自动切回通用，0=关闭
+        idleRevertMinutes: 0
+        # 引导分节排序位：520 落在 plan policy(500) 之后、工具引导(1000+) 之前
+        sectionOrder: 520
+        # 面板轮询间隔（毫秒）
+        pollMs: 15000

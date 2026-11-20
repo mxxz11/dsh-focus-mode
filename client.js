@@ -31,6 +31,8 @@ window.__ModuleLoader__.load({
 
     const ROUTE = '/dsh-focus-mode'
     const DEFAULT_POLL_MS = 15000
+    /** Panel-closed baseline poll; fast polling only runs while the panel is open. */
+    const SLOW_POLL_MS = 60000
     const GAP = 6
     const MORE_WIDTH = 84
 
@@ -88,6 +90,7 @@ window.__ModuleLoader__.load({
       const listeners = new Map()
       const retainers = new Map()
       const timers = new Map()
+      const fastTimers = new Map()
       let pollMs = DEFAULT_POLL_MS
       let wired = false
 
@@ -114,6 +117,7 @@ window.__ModuleLoader__.load({
         if (!sessionId) return
         const entry = ensure(sessionId)
         entries.set(sessionId, { ...entry, ...next })
+        syncFastTimer(sessionId)
         emit(sessionId)
       }
 
@@ -155,7 +159,7 @@ window.__ModuleLoader__.load({
         try {
           const response = await fetch(ROUTE + '/' + action, {
             method: 'POST',
-            headers: { 'content-type': 'application/json', accept: 'application/json' },
+            headers: { 'content-type': 'application/json', accept: 'application/json', 'x-dsh-focus': '1' },
             credentials: 'same-origin',
             body: JSON.stringify({ session: sessionId, ...payload }),
           })
@@ -170,16 +174,44 @@ window.__ModuleLoader__.load({
         }
       }
 
+      /** Slow baseline poll: cheap enough to keep the chip label fresh while closed. */
       const startTimer = (sessionId) => {
         if (timers.has(sessionId)) return
-        timers.set(sessionId, setInterval(() => { void load(sessionId) }, pollMs))
+        timers.set(sessionId, setInterval(() => { void load(sessionId) }, Math.max(pollMs, SLOW_POLL_MS)))
+      }
+
+      /**
+       * Fast poll only while the panel is actually open and the tab visible.
+       * Closed panels fall back to the slow baseline, so a session with the panel
+       * shut does not hold a 15s polling loop.
+       */
+      const syncFastTimer = (sessionId) => {
+        const entry = entries.get(sessionId)
+        const visible = typeof document === 'undefined' || document.visibilityState !== 'hidden'
+        const wantsFast = !!(entry && entry.open === true && visible)
+        const existing = fastTimers.get(sessionId)
+        if (wantsFast && existing === undefined) {
+          fastTimers.set(sessionId, setInterval(() => { void load(sessionId) }, pollMs))
+          void load(sessionId)
+          return
+        }
+        if (!wantsFast && existing !== undefined) {
+          clearInterval(existing)
+          fastTimers.delete(sessionId)
+        }
       }
 
       const stopTimer = (sessionId) => {
         const timer = timers.get(sessionId)
-        if (timer === undefined) return
-        clearInterval(timer)
-        timers.delete(sessionId)
+        if (timer !== undefined) {
+          clearInterval(timer)
+          timers.delete(sessionId)
+        }
+        const fast = fastTimers.get(sessionId)
+        if (fast !== undefined) {
+          clearInterval(fast)
+          fastTimers.delete(sessionId)
+        }
       }
 
       const restartTimers = () => {
@@ -1262,8 +1294,11 @@ window.__ModuleLoader__.load({
 
     return {
       inject: ['slots'],
-      /** Layout helpers, exposed only so the headless render test can assert them. */
-      __internals: { layoutTabs, chipWidth },
+      // Layout helpers exist only for the headless render test; they are not
+      // part of the shipped production surface.
+      ...(typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production'
+        ? {}
+        : { __internals: { layoutTabs, chipWidth } }),
       apply (ctx) {
         ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
           name: 'conversation.input.left',

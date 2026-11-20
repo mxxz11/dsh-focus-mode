@@ -210,3 +210,21 @@ dsh-focus-mode/
 ## 🐛 反馈
 
 Bug 反馈、功能建议，请在 GitHub 仓库提交 Issue：[https://github.com/mxxz11/dsh-focus-mode/issues](https://github.com/mxxz11/dsh-focus-mode/issues)
+
+## 预览配图
+
+> 📷 待补截图：请放一张到 `docs/preview.png`（建议 800×500，展示模式标签栏 + 严谨等级滑块 + 四个开关），再取消下面一行的注释。
+
+```markdown
+![面板预览](./docs/preview.png)
+```
+
+## 卸载说明
+
+卸载后插件立即从 Loader 移除，重启 DSH 不会自动加载，也不会抛异常。**状态文件不会被自动删除**：
+
+```
+<DSH_HOME>/storages/dsh-focus-mode/state.json
+```
+
+该文件只保存各会话的领域、四个开关、严谨等级与统计计数，可直接手动删除；删除后下次启用即为全新状态。
