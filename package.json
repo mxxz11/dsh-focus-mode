@@ -1,22 +1,41 @@
 {
   "name": "dsh-focus-mode",
   "version": "1.0.0",
-  "type": "module",
-  "main": "./lib/index.js",
-  "exports": {
-    ".": "./lib/index.js",
-    "./client": "./client.js"
-  },
-  "dsh": {
-  "bundle": true,
-  "client": "./client.js"
-},
-  "engines": {
-    "dsh": ">=0.2.0"
-  },
+  "description": "DSH任务域聚焦插件，锁定会话领域，管控附属动作，三档严谨度调节，抑制模型自发跨域与私自调用工具",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/mxxz11/dsh-focus-mode.git"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./modes": "./lib/modes.js",
+    "./actions": "./lib/actions.js",
+    "./package.json": "./package.json"
+  },
+  "icon": "./icon.svg",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "files": [
+    "lib",
+    "client.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/sim.mjs && node test/client-sim.mjs"
   }
 }
