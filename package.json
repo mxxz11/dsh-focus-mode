@@ -8,8 +8,9 @@
     "./client": "./client.js"
   },
   "dsh": {
-    "bundle": true
-  },
+  "bundle": true,
+  "client": "./client.js"
+},
   "engines": {
     "dsh": ">=0.2.0"
   },
