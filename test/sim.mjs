@@ -12,7 +12,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 
-import { apply } from '../lib/index.js'
+import apply from '../lib/index.js'
 import { MODES, MODE_IDS, PRIMARY_MODE_IDS, renderGuidance } from '../lib/modes.js'
 import {
   HEAVY_PROMPT,
